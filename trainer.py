@@ -34,6 +34,10 @@ class Trainer:
                                 ToTensor(),
                                 Normalize([0.5071,0.4866,0.4409],[0.2673,0.2564,0.2762])])
 
+        self.input_transform_eval = Compose([
+                                ToTensor(),
+                                Normalize([0.5071,0.4866,0.4409],[0.2673,0.2564,0.2762])])
+
         total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print("Solver total trainable parameters : ", total_params)
         print("---------------------------------------------")
@@ -79,10 +83,10 @@ class Trainer:
         for step_b in range(dataset.batch_num):
             print(f"Incremental step : {step_b + 1}")
             
-            # Get the train and test data for step b,
+            # Get the train and val data for step b,
             # and split them into train_x, train_y, val_x, val_y
             train, val = dataset.getNextClasses(step_b)
-            print(f'number of trainset: {len(train)}, number of testset: {len(test)}')
+            print(f'number of trainset: {len(train)}, number of valset: {len(val)}')
             train_x, train_y = zip(*train)
             val_x, val_y = zip(*val)
             val_xs.extend(val_x)
@@ -93,7 +97,7 @@ class Trainer:
             # Transform data and prepare dataloader
             train_data = DataLoader(BatchData(train_xs, train_ys, self.input_transform),
                         batch_size=batch_size, shuffle=True, drop_last=True)
-            test_data = DataLoader(BatchData(val_xs, val_ys, self.input_transform_eval),
+            val_data = DataLoader(BatchData(val_xs, val_ys, self.input_transform_eval),
                         batch_size=batch_size, shuffle=False)
             
             # Set optimizer and scheduler
@@ -122,7 +126,7 @@ class Trainer:
                     self.stage1(train_data, criterion, optimizer)
                 
                 # Evaluation
-                acc = self.eval(test_data)
+                acc = self.eval(val_data)
 
             if is_WA:
                 # Maintaining Fairness
@@ -133,7 +137,7 @@ class Trainer:
             self.previous_model = deepcopy(self.model)
 
             # Evaluate final accuracy at the end of one batch
-            acc = self.eval(test_data)
+            acc = self.eval(val_data)
             print(f'Previous accuracies: {acc}')
 
     def stage1(self, train_data, criterion, optimizer):

@@ -10,7 +10,7 @@ parser.add_argument('--epoch', default = 2, type = int)
 parser.add_argument('--lr', default = 0.1, type = int)
 parser.add_argument('--max_size', default = 2000, type = int)
 parser.add_argument('--total_cls', default = 100, type = int)
-parser.add_argument('--is_WA', default = False, type = bool)
+parser.add_argument('--is_WA', default = True, type = bool)
 args = parser.parse_args()
 
 
