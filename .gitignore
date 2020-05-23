@@ -1,0 +1,12 @@
+__pycache__/cifar100.cpython-37.pyc
+__pycache__/dataset.cpython-37.pyc
+__pycache__/exemplar.cpython-37.pyc
+__pycache__/model.cpython-37.pyc
+__pycache__/trainer.cpython-37.pyc
+__pycache__/utils.cpython-37.pyc
+.vscode/settings.json
+data/meta
+data/test
+data/train
+data/__pycache__/__init__.cpython-37.pyc
+nohup.out
