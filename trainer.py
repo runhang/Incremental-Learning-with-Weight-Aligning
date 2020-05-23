@@ -8,16 +8,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision.transforms import Compose, CenterCrop, Normalize, Scale, Resize, ToTensor, ToPILImage
-from torch.optim.lr_scheduler import LambdaLR, StepLR, MultiStepLR
+from torch.optim.lr_scheduler import MultiStepLR
 
 import numpy as np
-import glob
 import PIL.Image as Image
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 import os
-import json
 import pickle
+
 from dataset import BatchData
 from model import Resnet
 from cifar100 import Cifar100

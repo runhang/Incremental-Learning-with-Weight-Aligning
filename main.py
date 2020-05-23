@@ -2,7 +2,6 @@ import torch
 import numpy as np
 from trainer import Trainer
 import sys
-from utils import *
 import argparse
 
 parser = argparse.ArgumentParser(description='Incremental Learning BIC')

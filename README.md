@@ -6,10 +6,20 @@ Download Cifar100 dataset from https://www.cs.toronto.edu/~kriz/cifar-100-python
 
 Put meta, train, test into ./data
 
-# Train
+# Get Started
+## Environment
+* Python 3.6+
+* torch 1.3.1
+* torchvision 0.4.2
+* CUDA 10.0 & cudnn 7.6.4
+
+# Usage
 ```
 python main.py
 ```
+
+# Reference
+* https://github.com/sairin1202/BIC
 
 # TODO
 - [ ] Add weight clipping
