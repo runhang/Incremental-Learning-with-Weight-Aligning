@@ -37,7 +37,6 @@ class WALinear(nn.Module):
         return torch.cat([out1, out2, out3, out4, out5], dim = 1)
     
     def align_norms(self, step_b):
-        # Old_layers = torch.cat([self.WA_linears[:i] for i in range(step_b-1)])
         # Fetch old and new layers
         new_layer = self.WA_linears[step_b]
         old_layers = self.WA_linears[:step_b]
@@ -49,13 +48,13 @@ class WALinear(nn.Module):
         print("old_weight's shape is: ",old_weight.shape)
         print("new_weight's shape is: ",new_weight.shape)
 
-        # Get the norm
+        # Calculate the norm
         Norm_of_new = np.linalg.norm(new_weight, axis=1)
         Norm_of_old = np.linalg.norm(old_weight, axis=1)
         assert(len(Norm_of_new) == 20)
         assert(len(Norm_of_old) == step_b*20)
         
-        # Calculate Gamma
+        # Calculate the Gamma
         gamma = np.mean(Norm_of_new) / np.mean(Norm_of_old)
         print("Gamma = ", gamma)
 

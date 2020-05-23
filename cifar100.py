@@ -3,11 +3,12 @@ import numpy as np
 import os
 import random
 
+# Cifar100 data loader
 class Cifar100:
     def __init__(self):
-        with open('data/train','rb') as f:
+        with open('cifar-100-python/train','rb') as f:
             self.train = pickle.load(f, encoding='latin1')
-        with open('data/test','rb') as f:
+        with open('cifar-100-python/test','rb') as f:
             self.test = pickle.load(f, encoding='latin1')
         self.train_data = self.train['data']
         self.train_labels = self.train['fine_labels']
@@ -17,20 +18,18 @@ class Cifar100:
         self.current_step = 0
         self.batch_num = 5
 
+    # Split into five groups for incremental learning
     def initialize(self):
+        # split train data into 5 groups
         train_groups = [[],[],[],[],[]]
-
-        # split cifar100 into five groups for incremental learning
         for train_data, train_label in zip(self.train_data, self.train_labels):
-            # print(train_data.shape)
-            
-            # Turn 2-bit data into rgb image
+            # Decode the data from binary form
             train_data_r = train_data[:1024].reshape(32, 32)
             train_data_g = train_data[1024:2048].reshape(32, 32)
             train_data_b = train_data[2048:].reshape(32, 32)
             train_data = np.dstack((train_data_r, train_data_g, train_data_b))
 
-            # split into five groups
+            # Split into five groups
             if train_label < 20:
                 train_groups[0].append((train_data,train_label))
             elif 20 <= train_label < 40:
@@ -41,11 +40,6 @@ class Cifar100:
                 train_groups[3].append((train_data,train_label))
             elif 80 <= train_label < 100:
                 train_groups[4].append((train_data,train_label))
-        assert len(train_groups[0]) == 10000, len(train_groups[0])
-        assert len(train_groups[1]) == 10000, len(train_groups[1])
-        assert len(train_groups[2]) == 10000, len(train_groups[2])
-        assert len(train_groups[3]) == 10000, len(train_groups[3])
-        assert len(train_groups[4]) == 10000, len(train_groups[4])
 
         # split test data into 5 groups
         test_groups = [[],[],[],[],[]]
@@ -65,35 +59,35 @@ class Cifar100:
                 test_groups[3].append((test_data,test_label))
             elif 80 <= test_label < 100:
                 test_groups[4].append((test_data,test_label))
-        assert len(test_groups[0]) == 2000
-        assert len(test_groups[1]) == 2000
-        assert len(test_groups[2]) == 2000
-        assert len(test_groups[3]) == 2000
-        assert len(test_groups[4]) == 2000
 
-        # Prepare val groups
+        # Build validation set with test images of old_classes and new_classes to 
         val_groups = [[],[],[],[],[]]
         for step in range(5):
+            # Calculate the number of new classes image and old classes image
             old_clases_propotion = step / (step + 1)
             new_clases_propotion = 1 / (step + 1)
             num_of_old_classes = int(2000 * old_clases_propotion)
             num_of_new_classes = int(2000 * new_clases_propotion)
 
-            # Select Val groups from test
+            # Randomly fetch the old classes images
             if step >= 1:
                 old_classes = []
                 for i in range(step):
                     old_classes.extend(test_groups[i])
                 assert(len(old_classes) == 2000 * step)
                 random.shuffle(old_classes)
-                val_groups[step] = old_classes[:num_of_old_classes]
+                val_groups[step].extend(old_classes[:num_of_old_classes])
+            
+            # Randomly select new classes images
+            random.shuffle(test_groups[step])
             val_groups[step].extend(test_groups[step][:num_of_new_classes])
             assert(len(val_groups[step]) == 2000 or len(val_groups[step]) == 1999)
     
         return train_groups, test_groups, val_groups
 
-    def getNextClasses(self, i):
-        return self.train_groups[i], self.val_groups[i]
+    # Return the data used for step_b
+    def getNextClasses(self, step_b):
+        return self.train_groups[step_b], self.val_groups[step_b]
 
 if __name__ == "__main__":
     cifar = Cifar100()

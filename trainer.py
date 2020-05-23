@@ -28,7 +28,6 @@ class Trainer:
         self.dataset = Cifar100()
         self.model = Resnet(32,total_cls).cuda()
         print(self.model)
-        # self.model = nn.DataParallel(self.model, device_ids=[0])
         self.input_transform = Compose([
                                 transforms.RandomHorizontalFlip(),
                                 transforms.RandomCrop(32,padding=4),
@@ -63,7 +62,6 @@ class Trainer:
         print("---------------------------------------------")
         return acc
 
-
     def eval(self, criterion, evaldata):
         self.model.eval()
         losses = []
@@ -88,7 +86,7 @@ class Trainer:
         for param_group in optimizer.param_groups:
             return param_group['lr']
 
-    def train(self, batch_size, epoches, lr, max_size):
+    def train(self, batch_size, epoches, lr, max_size, is_WA):
         total_cls = self.total_cls
         criterion = nn.CrossEntropyLoss()
 
@@ -153,9 +151,10 @@ class Trainer:
                 # Test accuracy
                 acc = self.test(test_data)
 
-            # Maintaining Fairness
-            if step_b >= 1:
-                self.model.weight_align(step_b)
+            if is_WA:
+                # Maintaining Fairness
+                if step_b >= 1:
+                    self.model.weight_align(step_b)
 
             self.previous_model = deepcopy(self.model) # deepcopy the previous model
             acc = self.test(test_data)

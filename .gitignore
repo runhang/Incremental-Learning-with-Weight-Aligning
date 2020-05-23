@@ -10,3 +10,6 @@ data/test
 data/train
 data/__pycache__/__init__.cpython-37.pyc
 nohup.out
+cifar-100-python/meta
+cifar-100-python/test
+cifar-100-python/train
