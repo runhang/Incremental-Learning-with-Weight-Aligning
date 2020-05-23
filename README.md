@@ -12,6 +12,12 @@ Put meta, train, test into ./data
 * torch 1.3.1
 * torchvision 0.4.2
 * CUDA 10.0 & cudnn 7.6.4
+* argparse
+
+# Basic Install
+```
+pip install -r requirements.txt
+```
 
 # Usage
 ```
