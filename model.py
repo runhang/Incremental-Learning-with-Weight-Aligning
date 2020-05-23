@@ -24,7 +24,6 @@ class WALinear(nn.Module):
         self.out_features = out_features
         self.sub_num_classes = self.out_features//5
         self.WA_linears = nn.ModuleList()
-        # TODO: clear the bth group weight on the bth step
         self.WA_linears.extend([nn.Linear(self.in_features, self.sub_num_classes, bias=False) for i in range(5)])
 
     def forward(self, x):

@@ -34,54 +34,29 @@ class Trainer:
                                 ToTensor(),
                                 Normalize([0.5071,0.4866,0.4409],[0.2673,0.2564,0.2762])])
 
-        self.input_transform_eval= Compose([
-                                ToTensor(),
-                                Normalize([0.5071,0.4866,0.4409],[0.2673,0.2564,0.2762])])
         total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print("Solver total trainable parameters : ", total_params)
         print("---------------------------------------------")
 
-
-    def test(self, testdata):
-        print("test data number : ",len(testdata))
+    def eval(self, valdata):
         self.model.eval()
         count = 0
         correct = 0
         wrong = 0
-        for i, (image, label) in enumerate(testdata):
+        for i, (image, label) in enumerate(valdata):
             image = image.cuda()
             label = label.view(-1).cuda()
             p = self.model(image)
-            # p = self.bias_forward(p)
             pred = p[:,:self.seen_cls].argmax(dim=-1)
             correct += sum(pred == label).item()
             wrong += sum(pred != label).item()
         acc = correct / (wrong + correct)
-        print("Test Acc: {}".format(acc*100))
+        print("Val Acc: {}".format(acc*100))
         self.model.train()
         print("---------------------------------------------")
         return acc
 
-    def eval(self, criterion, evaldata):
-        self.model.eval()
-        losses = []
-        correct = 0
-        wrong = 0
-        for i, (image, label) in enumerate(evaldata):
-            image = image.cuda()
-            label = label.view(-1).cuda()
-            p = self.model(image)
-            p = self.bias_forward(p)
-            loss = criterion(p, label)
-            losses.append(loss.item())
-            pred = p[:,:self.seen_cls].argmax(dim=-1)
-            correct += sum(pred == label).item()
-            wrong += sum(pred != label).item()
-        print("Validation Loss: {}".format(np.mean(losses)))
-        print("Validation Acc: {}".format(100*correct/(correct+wrong)))
-        self.model.train()
-        return
-
+    # Get learning rate
     def get_lr(self, optimizer):
         for param_group in optimizer.param_groups:
             return param_group['lr']
@@ -90,12 +65,12 @@ class Trainer:
         total_cls = self.total_cls
         criterion = nn.CrossEntropyLoss()
 
-        # TODO: Understand
+        # Used for Knowledge Distill
         previous_model = None
 
         dataset = self.dataset
-        test_xs = []
-        test_ys = []
+        val_xs = []
+        val_ys = []
         train_xs = []
         train_ys = []
 
@@ -105,38 +80,36 @@ class Trainer:
             print(f"Incremental step : {step_b + 1}")
             
             # Get the train and test data for step b,
-            # and split them into train_x, train_y, test_x, test_y
-            train, test = dataset.getNextClasses(step_b)
+            # and split them into train_x, train_y, val_x, val_y
+            train, val = dataset.getNextClasses(step_b)
             print(f'number of trainset: {len(train)}, number of testset: {len(test)}')
             train_x, train_y = zip(*train)
-            test_x, test_y = zip(*test)
-            test_xs.extend(test_x)
-            test_ys.extend(test_y)
+            val_x, val_y = zip(*val)
+            val_xs.extend(val_x)
+            val_ys.extend(val_y)
             train_xs.extend(train_x)
             train_ys.extend(train_y)
 
             # Transform data and prepare dataloader
             train_data = DataLoader(BatchData(train_xs, train_ys, self.input_transform),
                         batch_size=batch_size, shuffle=True, drop_last=True)
-            test_data = DataLoader(BatchData(test_xs, test_ys, self.input_transform_eval),
+            test_data = DataLoader(BatchData(val_xs, val_ys, self.input_transform_eval),
                         batch_size=batch_size, shuffle=False)
             
             # Set optimizer and scheduler
             optimizer = optim.SGD(self.model.parameters(), lr=lr, momentum=0.9,  weight_decay=2e-4)
             scheduler = MultiStepLR(optimizer, [100, 150, 200], gamma=0.1)
             
-
             # Print the number of classes have been trained
-            # TODO: change trained classes number into a better understood way
             self.seen_cls += total_cls//dataset.batch_num
-            print("available classes : ", self.seen_cls)
+            print("seen classes : ", self.seen_cls)
             test_acc = []
 
             for epoch in range(epoches):
                 print("---------------------------------------------")
                 print("Epoch", epoch)
 
-                # Decrease learning rate according to steps
+                # Print current learning rate
                 scheduler.step()
                 cur_lr = self.get_lr(optimizer)
                 print("Current Learning Rate : ", cur_lr)
@@ -148,19 +121,20 @@ class Trainer:
                 else:
                     self.stage1(train_data, criterion, optimizer)
                 
-                # Test accuracy
-                acc = self.test(test_data)
+                # Evaluation
+                acc = self.eval(test_data)
 
             if is_WA:
                 # Maintaining Fairness
                 if step_b >= 1:
                     self.model.weight_align(step_b)
 
-            self.previous_model = deepcopy(self.model) # deepcopy the previous model
-            acc = self.test(test_data)
-            test_acc.append(acc)
-            test_accs.append(max(test_acc))
-            print(f'Previous accuracies: {test_accs}')
+            # deepcopy the previous model used for KD
+            self.previous_model = deepcopy(self.model)
+
+            # Evaluate final accuracy at the end of one batch
+            acc = self.eval(test_data)
+            print(f'Previous accuracies: {acc}')
 
     def stage1(self, train_data, criterion, optimizer):
         print("Training ... ")
