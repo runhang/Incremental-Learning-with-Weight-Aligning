@@ -138,7 +138,8 @@ class Trainer:
 
             # Evaluate final accuracy at the end of one batch
             acc = self.eval(val_data)
-            print(f'Previous accuracies: {acc}')
+            test_accs.append(acc)
+            print(f'Previous accuracies: {test_accs}')
 
     def stage1(self, train_data, criterion, optimizer):
         print("Training ... ")
