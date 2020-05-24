@@ -167,17 +167,17 @@ class Trainer:
             label = label.view(-1).cuda()
             p = self.model(image)
             with torch.no_grad():
-                pre_p = self.previous_model(image)
-                pre_p = F.softmax(pre_p[:,:self.seen_cls-20]/T, dim=1)
-            logp = F.log_softmax(p[:,:self.seen_cls-20]/T, dim=1)
-            loss_soft_target = -torch.mean(torch.sum(pre_p * logp, dim=1))
-            loss_hard_target = nn.CrossEntropyLoss()(p[:,:self.seen_cls], label)
-            loss = loss_soft_target * T * T + (1-beta) * loss_hard_target
+                previous_q = self.previous_model(image)
+                previous_q = F.softmax(previous_q[:,:self.seen_cls-20]/T, dim=1)
+            log_current_p = F.log_softmax(p[:,:self.seen_cls-20]/T, dim=1)
+            loss_distillation = -torch.mean(torch.sum(previous_q * log_current_p, dim=1))
+            loss_crossEntropy = nn.CrossEntropyLoss()(p[:,:self.seen_cls], label)
+            loss = loss_distillation * T * T + (1-beta) * loss_crossEntropy
             optimizer.zero_grad()
             loss.backward(retain_graph=True)
             optimizer.step()
-            distill_losses.append(loss_soft_target.item())
-            ce_losses.append(loss_hard_target.item())
+            distill_losses.append(loss_distillation.item())
+            ce_losses.append(loss_crossEntropy.item())
         print("KD loss :", np.mean(distill_losses), "; CE loss :", np.mean(ce_losses))
 
     
